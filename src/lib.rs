@@ -1,46 +1,99 @@
+use std::collections::HashMap;
+
+/// An implementation of a Trie data structure.
+/// A Trie is a tree-like data structure that stores strings
+/// in a way that allows for efficient retrieval of strings.
 #[derive(Debug)]
-struct Trie<V> {
-    root: Node<V>,
+pub struct Trie {
+    root: Node,
 }
 
 #[derive(Debug)]
-struct Node<V> {
-    key: String,
-    value: Option<V>,
-    children: Option<Vec<Node<V>>>,
+struct Node {
+    is_terminal: bool,
+    children: HashMap<char, Node>,
 }
 
-impl<V> Trie<V> {
-    fn new() -> Self {
+impl Trie {
+    pub fn new() -> Self {
         Self {
             root: Node {
-                key: String::new(),
-                value: None,
-                children: None,
+                is_terminal: false,
+                children: HashMap::new(),
             },
         }
     }
 
-    fn insert(&mut self, key: &str, value: V) {}
-
-    fn get(&self, key: &str) -> Option<&V> {
-        None
+    /// Inserts a key into the Trie.
+    pub fn insert(&mut self, key: &str) {
+        let mut current = &mut self.root;
+        for c in key.chars() {
+            current = current.children.entry(c).or_insert_with(|| Node {
+                is_terminal: false,
+                children: HashMap::new(),
+            });
+        }
+        current.is_terminal = true;
     }
 
-    fn remove(&mut self, key: &str) -> Option<V> {
-        None
+    /// Removes a key from the Trie.
+    pub fn remove(&mut self, key: &str) {
+        let mut current = &mut self.root;
+        for c in key.chars() {
+            current = match current.children.get_mut(&c) {
+                Some(node) => node,
+                None => return,
+            }
+        }
+        current.is_terminal = false;
     }
 
-    fn contains(&self, key: &str) -> bool {
-        false
+    /// Checks if the Trie contains a key.
+    pub fn contains(&self, key: &str) -> bool {
+        let mut current = &self.root;
+        for c in key.chars() {
+            current = match current.children.get(&c) {
+                Some(node) => node,
+                None => return false,
+            };
+        }
+        current.is_terminal
     }
 
-    fn is_empty(&self) -> bool {
-        false
+    /// Checks if the Trie contains a prefix.
+    pub fn contains_prefix(&self, prefix: &str) -> bool {
+        let mut current = &self.root;
+        for c in prefix.chars() {
+            current = match current.children.get(&c) {
+                Some(node) => node,
+                None => return false,
+            };
+        }
+        true
     }
+}
+pub struct TrieIterator {
+    trie: Trie,
+    stack: Vec<String>,
+}
 
-    fn size(&self) -> usize {
-        0
+impl Iterator for TrieIterator {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
+
+impl IntoIterator for Trie {
+    type Item = String;
+    type IntoIter = TrieIterator;
+
+    fn into_iter(self) -> Self::IntoIter {
+        TrieIterator {
+            trie: self,
+            stack: vec![],
+        }
     }
 }
 
@@ -49,118 +102,35 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_trie() {
-        let trie = Trie::<i32>::new();
-        assert_eq!(trie.size(), 0);
-        assert!(trie.is_empty());
-    }
+    fn test_insert() {
+        let mut trie = Trie::new();
+        trie.insert("hello");
+        trie.insert("world");
 
-    #[test]
-    fn insert() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        assert_eq!(trie.size(), 1);
-        assert!(!trie.is_empty());
-    }
-
-    #[test]
-    fn get() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        assert_eq!(trie.get("hello"), Some(&1));
-    }
-
-    #[test]
-    fn remove() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        assert_eq!(trie.remove("hello"), Some(1));
-        assert_eq!(trie.size(), 0);
-        assert!(trie.is_empty());
-    }
-
-    #[test]
-    fn contains() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
         assert!(trie.contains("hello"));
+        assert!(trie.contains("world"));
     }
 
     #[test]
-    fn is_empty() {
-        let mut trie = Trie::<i32>::new();
-        assert_eq!(trie.is_empty(), true);
-        trie.insert("hello", 1);
-        assert_eq!(trie.is_empty(), false);
+    fn test_remove() {
+        let mut trie = Trie::new();
+        trie.insert("hello");
+        trie.insert("world");
+        trie.remove("hello");
+
+        assert!(!trie.contains("hello"));
+        assert!(trie.contains("world"));
     }
 
     #[test]
-    fn size() {
-        let mut trie = Trie::<i32>::new();
-        assert_eq!(trie.size(), 0);
-        trie.insert("hello", 1);
-        assert_eq!(trie.size(), 1);
-    }
+    fn test_contains_prefix() {
+        let mut trie = Trie::new();
+        trie.insert("hello");
+        trie.insert("world");
 
-    #[test]
-    fn insert_multiple() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        trie.insert("hello_there", 2);
-        trie.insert("hello_there_you", 3);
-        assert_eq!(trie.size(), 3);
-        assert_eq!(trie.get("hello"), Some(&1));
-        assert_eq!(trie.get("hello_there"), Some(&2));
-        assert_eq!(trie.get("hello_there_you"), Some(&3));
-    }
-
-    #[test]
-    fn remove_multiple() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        trie.insert("hello_there", 2);
-        trie.insert("hello_there_you", 3);
-        assert_eq!(trie.size(), 3);
-        assert_eq!(trie.remove("hello"), Some(1));
-        assert_eq!(trie.remove("hello_there"), Some(2));
-        assert_eq!(trie.remove("hello_there_you"), Some(3));
-        assert_eq!(trie.size(), 0);
-        assert!(trie.is_empty());
-    }
-
-    #[test]
-    fn contains_multiple() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        trie.insert("hello_there", 2);
-        trie.insert("hello_there_you", 3);
-        assert!(trie.contains("hello"));
-        assert!(trie.contains("hello_there"));
-        assert!(trie.contains("hello_there_you"));
-    }
-
-    #[test]
-    fn get_multiple() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        trie.insert("hello_there", 2);
-        trie.insert("hello_there_you", 3);
-        assert_eq!(trie.get("hello"), Some(&1));
-        assert_eq!(trie.get("hello_there"), Some(&2));
-        assert_eq!(trie.get("hello_there_you"), Some(&3));
-    }
-
-    #[test]
-    fn insert_remove() {
-        let mut trie = Trie::<i32>::new();
-        trie.insert("hello", 1);
-        trie.insert("hello_there", 2);
-        trie.insert("hello_there_you", 3);
-        assert_eq!(trie.size(), 3);
-        assert_eq!(trie.remove("hello"), Some(1));
-        assert_eq!(trie.remove("hello_there"), Some(2));
-        assert_eq!(trie.remove("hello_there_you"), Some(3));
-        assert_eq!(trie.size(), 0);
-        assert!(trie.is_empty());
+        assert!(trie.contains_prefix("he"));
+        assert!(trie.contains_prefix("wor"));
+        assert!(trie.contains_prefix("h"));
+        assert!(trie.contains_prefix("w"));
     }
 }
