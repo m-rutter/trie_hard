@@ -1,4 +1,5 @@
-///! # Trie hard
-pub mod trie;
+//! # Trie data structures
 
+pub mod iter;
+pub mod trie;
 pub mod trie_map;
